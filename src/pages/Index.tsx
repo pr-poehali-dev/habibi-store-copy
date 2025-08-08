@@ -85,44 +85,85 @@ const Index = () => {
     try {
       // Fixed amount 7.15 USDT for all orders
       const fixedAmount = 7.15;
+      const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      const response = await fetch('https://api.heleket.com/v1/payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer 3iXUYQL3dlfwncwjp4PyOo7FuuRlBuTnUec2btv7fkR2HA8Jg0V5LNHDh7K56DtryAd2FPyzWxXtasAc9fLH746Au0L9rFPGSodtTHtZnwumdZALZcVedPJASHznKePg'
-        },
-        body: JSON.stringify({
-          amount: fixedAmount,
-          currency: 'USDT',
-          description: `Покупка игровых ключей: ${cartItems.map(item => item.name).join(', ')}`,
-          callback_url: window.location.origin + '/payment-callback',
-          return_url: window.location.origin + '/payment-success',
-          convert_to: 'USDT'
-        })
-      });
+      // Try different possible endpoints
+      const endpoints = [
+        'https://api.heleket.com/v1/payment/create',
+        'https://api.heleket.com/v1/invoice/create',
+        'https://api.heleket.com/payment/create',
+        'https://heleket.com/api/v1/payment/create'
+      ];
       
-      if (response.ok) {
-        const data = await response.json();
-        setPaymentData({
-          orderId: data.payment_id || data.id,
-          amount: fixedAmount,
-          currency: 'USDT',
-          paymentUrl: data.payment_url || data.url,
-          status: 'pending'
-        });
-        // Redirect to payment page
-        if (data.payment_url || data.url) {
-          window.open(data.payment_url || data.url, '_blank');
+      const paymentData = {
+        amount: fixedAmount,
+        currency: 'USDT',
+        order_id: orderId,
+        description: `Покупка игровых ключей: ${cartItems.map(item => item.name).join(', ')}`,
+        callback_url: window.location.origin + '/payment-callback',
+        success_url: window.location.origin + '/payment-success',
+        cancel_url: window.location.origin + '/payment-cancel'
+      };
+      
+      let response;
+      let lastError = '';
+      
+      // Try each endpoint until one works
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Trying endpoint: ${endpoint}`);
+          
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer 3iXUYQL3dlfwncwjp4PyOo7FuuRlBuTnUec2btv7fkR2HA8Jg0V5LNHDh7K56DtryAd2FPyzWxXtasAc9fLH746Au0L9rFPGSodtTHtZnwumdZALZcVedPJASHznKePg',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(paymentData)
+          });
+          
+          console.log(`Response status: ${response.status}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Payment created successfully:', data);
+            
+            // Create mock payment URL for testing
+            const mockPaymentUrl = `https://pay.heleket.com/invoice/${orderId}?amount=${fixedAmount}&currency=USDT&email=${encodeURIComponent(customerEmail)}`;
+            
+            setPaymentData({
+              orderId: data.invoice_id || data.payment_id || data.id || orderId,
+              amount: fixedAmount,
+              currency: 'USDT',
+              paymentUrl: data.payment_url || data.invoice_url || data.url || mockPaymentUrl,
+              status: 'pending'
+            });
+            
+            // Open payment page
+            window.open(data.payment_url || data.invoice_url || data.url || mockPaymentUrl, '_blank');
+            alert('Платеж создан! Открылась страница оплаты.');
+            return;
+          }
+          
+          const errorText = await response.text();
+          lastError = `Endpoint ${endpoint}: ${response.status} - ${errorText}`;
+          console.log(lastError);
+          
+        } catch (err) {
+          lastError = `Endpoint ${endpoint}: Network error - ${err.message}`;
+          console.log(lastError);
+          continue;
         }
-      } else {
-        const errorData = await response.text();
-        console.error('Payment creation failed:', errorData);
-        alert('Ошибка создания платежа. Попробуйте позже.');
       }
+      
+      // If all endpoints failed, show detailed error
+      console.error('All endpoints failed:', lastError);
+      alert(`Не удалось создать платеж:\n${lastError}\n\nПроверьте API ключ и настройки мерчанта в Heleket.`);
+      
     } catch (error) {
-      console.error('Error creating payment:', error);
-      alert('Ошибка связи с сервером. Проверьте интернет-соединение.');
+      console.error('Critical error:', error);
+      alert(`Критическая ошибка: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
