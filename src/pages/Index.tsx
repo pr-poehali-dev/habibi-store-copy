@@ -2,13 +2,122 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
 
-const Index = () => {
-  const [cartItems, setCartItems] = useState(0);
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice: number;
+  image: string;
+  description: string;
+}
 
-  const addToCart = () => {
-    setCartItems(cartItems + 1);
+interface PaymentData {
+  orderId: string;
+  amount: number;
+  currency: string;
+  paymentUrl: string;
+  status: 'pending' | 'completed' | 'failed';
+}
+
+const Index = () => {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedCrypto, setSelectedCrypto] = useState<string>('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const products = [
+    {
+      id: 'gta5-premium',
+      name: 'GTA 5 Premium Edition',
+      price: 600,
+      originalPrice: 2000,
+      image: '/img/e4ae1e34-f8b1-463e-b251-a08a0effaf36.jpg',
+      description: 'Полное издание с Criminal Enterprise Starter Pack'
+    },
+    {
+      id: 'steam-key',
+      name: 'Steam Ключ GTA 5',
+      price: 450,
+      originalPrice: 1500,
+      image: '',
+      description: 'Стандартное издание для Steam'
+    },
+    {
+      id: 'rockstar-key',
+      name: 'Rockstar Games Key',
+      price: 550,
+      originalPrice: 1800,
+      image: '',
+      description: 'Прямая активация в Rockstar Launcher'
+    }
+  ];
+
+  const addToCart = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (product && !cartItems.find(item => item.id === productId)) {
+      setCartItems([...cartItems, product]);
+    }
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCartItems(cartItems.filter(item => item.id !== productId));
+  };
+
+  const getTotalPrice = () => {
+    return cartItems.reduce((total, item) => total + item.price, 0);
+  };
+
+  const createHeleletPayment = async () => {
+    if (!selectedCrypto || !customerEmail) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      const response = await fetch('https://api.heleket.com/v1/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer 3iXUYQL3dlfwncwjp4PyOo7FuuRlBuTnUec2btv7fkR2HA8Jg0V5LNHDh7K56DtryAd2FPyzWxXtasAc9fLH746Au0L9rFPGSodtTHtZnwumdZALZcVedPJASHznKePg'
+        },
+        body: JSON.stringify({
+          amount: getTotalPrice(),
+          currency: selectedCrypto,
+          description: `Покупка игровых ключей: ${cartItems.map(item => item.name).join(', ')}`,
+          customer_email: customerEmail,
+          callback_url: window.location.origin + '/payment-callback',
+          return_url: window.location.origin + '/payment-success'
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPaymentData({
+          orderId: data.order_id,
+          amount: getTotalPrice(),
+          currency: selectedCrypto,
+          paymentUrl: data.payment_url,
+          status: 'pending'
+        });
+        // Redirect to payment page
+        window.open(data.payment_url, '_blank');
+      } else {
+        console.error('Payment creation failed');
+      }
+    } catch (error) {
+      console.error('Error creating payment:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -26,14 +135,137 @@ const Index = () => {
               <a href="#" className="text-gray-300 hover:text-white transition-colors">Контакты</a>
             </nav>
             <div className="flex items-center space-x-4">
-              <Button variant="outline" className="relative">
-                <Icon name="ShoppingCart" size={20} />
-                {cartItems > 0 && (
-                  <Badge className="absolute -top-2 -right-2 px-2 py-1 text-xs bg-red-500">
-                    {cartItems}
-                  </Badge>
-                )}
-              </Button>
+              <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="relative">
+                    <Icon name="ShoppingCart" size={20} />
+                    {cartItems.length > 0 && (
+                      <Badge className="absolute -top-2 -right-2 px-2 py-1 text-xs bg-red-500">
+                        {cartItems.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg bg-slate-800 border-slate-700 text-white">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center">
+                      <Icon name="ShoppingCart" size={20} className="mr-2" />
+                      Корзина ({cartItems.length})
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-300">
+                      Товары в вашей корзине
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="max-h-96 overflow-y-auto">
+                    {cartItems.length === 0 ? (
+                      <p className="text-gray-400 text-center py-8">Корзина пуста</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {cartItems.map((item) => (
+                          <div key={item.id} className="flex items-center justify-between p-4 bg-slate-700 rounded-lg">
+                            <div className="flex-1">
+                              <h4 className="font-medium">{item.name}</h4>
+                              <p className="text-sm text-gray-300">{item.description}</p>
+                              <p className="text-lg font-bold text-green-400">{item.price}₽</p>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => removeFromCart(item.id)}
+                              className="ml-4"
+                            >
+                              <Icon name="Trash2" size={16} />
+                            </Button>
+                          </div>
+                        ))}
+                        <Separator className="bg-slate-600" />
+                        <div className="flex justify-between items-center font-bold text-lg">
+                          <span>Итого:</span>
+                          <span className="text-green-400">{getTotalPrice()}₽</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    {cartItems.length > 0 && (
+                      <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
+                        <DialogTrigger asChild>
+                          <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                            Оформить заказ
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700 text-white">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center">
+                              <Icon name="CreditCard" size={20} className="mr-2" />
+                              Оплата криптовалютой
+                            </DialogTitle>
+                            <DialogDescription className="text-gray-300">
+                              Выберите криптовалюту для оплаты
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="email">Email для получения ключей</Label>
+                              <Input 
+                                id="email"
+                                type="email"
+                                placeholder="your@email.com"
+                                value={customerEmail}
+                                onChange={(e) => setCustomerEmail(e.target.value)}
+                                className="bg-slate-700 border-slate-600 text-white"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="crypto">Криптовалюта</Label>
+                              <Select value={selectedCrypto} onValueChange={setSelectedCrypto}>
+                                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                                  <SelectValue placeholder="Выберите криптовалюту" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-700 border-slate-600">
+                                  <SelectItem value="BTC" className="text-white">Bitcoin (BTC)</SelectItem>
+                                  <SelectItem value="ETH" className="text-white">Ethereum (ETH)</SelectItem>
+                                  <SelectItem value="USDT" className="text-white">Tether (USDT)</SelectItem>
+                                  <SelectItem value="LTC" className="text-white">Litecoin (LTC)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="bg-slate-700 p-4 rounded-lg">
+                              <div className="flex justify-between items-center mb-2">
+                                <span>Товары:</span>
+                                <span>{cartItems.length} шт.</span>
+                              </div>
+                              <div className="flex justify-between items-center font-bold text-lg">
+                                <span>К оплате:</span>
+                                <span className="text-green-400">{getTotalPrice()}₽</span>
+                              </div>
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button 
+                              onClick={createHeleletPayment}
+                              disabled={!selectedCrypto || !customerEmail || isProcessing}
+                              className="w-full bg-green-600 hover:bg-green-700"
+                            >
+                              {isProcessing ? (
+                                <>
+                                  <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                                  Создание платежа...
+                                </>
+                              ) : (
+                                <>
+                                  <Icon name="Coins" size={16} className="mr-2" />
+                                  Перейти к оплате
+                                </>
+                              )}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
@@ -93,11 +325,12 @@ const Index = () => {
               </CardContent>
               <CardFooter>
                 <Button 
-                  onClick={addToCart} 
+                  onClick={() => addToCart('gta5-premium')} 
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={cartItems.some(item => item.id === 'gta5-premium')}
                 >
                   <Icon name="ShoppingCart" size={16} className="mr-2" />
-                  Купить сейчас
+                  {cartItems.some(item => item.id === 'gta5-premium') ? 'В корзине' : 'Купить сейчас'}
                 </Button>
               </CardFooter>
             </Card>
@@ -131,11 +364,12 @@ const Index = () => {
               </CardContent>
               <CardFooter>
                 <Button 
-                  onClick={addToCart}
+                  onClick={() => addToCart('steam-key')}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={cartItems.some(item => item.id === 'steam-key')}
                 >
                   <Icon name="ShoppingCart" size={16} className="mr-2" />
-                  Купить сейчас
+                  {cartItems.some(item => item.id === 'steam-key') ? 'В корзине' : 'Купить сейчас'}
                 </Button>
               </CardFooter>
             </Card>
@@ -169,11 +403,12 @@ const Index = () => {
               </CardContent>
               <CardFooter>
                 <Button 
-                  onClick={addToCart}
+                  onClick={() => addToCart('rockstar-key')}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={cartItems.some(item => item.id === 'rockstar-key')}
                 >
                   <Icon name="ShoppingCart" size={16} className="mr-2" />
-                  Купить сейчас
+                  {cartItems.some(item => item.id === 'rockstar-key') ? 'В корзине' : 'Купить сейчас'}
                 </Button>
               </CardFooter>
             </Card>
