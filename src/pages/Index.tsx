@@ -78,43 +78,51 @@ const Index = () => {
   };
 
   const createHeleletPayment = async () => {
-    if (!selectedCrypto || !customerEmail) return;
+    if (!customerEmail) return;
     
     setIsProcessing(true);
     
     try {
-      const response = await fetch('https://api.heleket.com/v1/payments', {
+      // Fixed amount 7.15 USDT for all orders
+      const fixedAmount = 7.15;
+      
+      const response = await fetch('https://api.heleket.com/v1/payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer 3iXUYQL3dlfwncwjp4PyOo7FuuRlBuTnUec2btv7fkR2HA8Jg0V5LNHDh7K56DtryAd2FPyzWxXtasAc9fLH746Au0L9rFPGSodtTHtZnwumdZALZcVedPJASHznKePg'
         },
         body: JSON.stringify({
-          amount: getTotalPrice(),
-          currency: selectedCrypto,
+          amount: fixedAmount,
+          currency: 'USDT',
           description: `Покупка игровых ключей: ${cartItems.map(item => item.name).join(', ')}`,
-          customer_email: customerEmail,
           callback_url: window.location.origin + '/payment-callback',
-          return_url: window.location.origin + '/payment-success'
+          return_url: window.location.origin + '/payment-success',
+          convert_to: 'USDT'
         })
       });
       
       if (response.ok) {
         const data = await response.json();
         setPaymentData({
-          orderId: data.order_id,
-          amount: getTotalPrice(),
-          currency: selectedCrypto,
-          paymentUrl: data.payment_url,
+          orderId: data.payment_id || data.id,
+          amount: fixedAmount,
+          currency: 'USDT',
+          paymentUrl: data.payment_url || data.url,
           status: 'pending'
         });
         // Redirect to payment page
-        window.open(data.payment_url, '_blank');
+        if (data.payment_url || data.url) {
+          window.open(data.payment_url || data.url, '_blank');
+        }
       } else {
-        console.error('Payment creation failed');
+        const errorData = await response.text();
+        console.error('Payment creation failed:', errorData);
+        alert('Ошибка создания платежа. Попробуйте позже.');
       }
     } catch (error) {
       console.error('Error creating payment:', error);
+      alert('Ошибка связи с сервером. Проверьте интернет-соединение.');
     } finally {
       setIsProcessing(false);
     }
@@ -216,35 +224,34 @@ const Index = () => {
                                 className="bg-slate-700 border-slate-600 text-white"
                               />
                             </div>
-                            <div>
-                              <Label htmlFor="crypto">Криптовалюта</Label>
-                              <Select value={selectedCrypto} onValueChange={setSelectedCrypto}>
-                                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                                  <SelectValue placeholder="Выберите криптовалюту" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-slate-700 border-slate-600">
-                                  <SelectItem value="BTC" className="text-white">Bitcoin (BTC)</SelectItem>
-                                  <SelectItem value="ETH" className="text-white">Ethereum (ETH)</SelectItem>
-                                  <SelectItem value="USDT" className="text-white">Tether (USDT)</SelectItem>
-                                  <SelectItem value="LTC" className="text-white">Litecoin (LTC)</SelectItem>
-                                </SelectContent>
-                              </Select>
+                            <div className="bg-slate-700 p-4 rounded-lg">
+                              <div className="flex items-center justify-center mb-2">
+                                <Icon name="DollarSign" size={20} className="mr-2 text-green-400" />
+                                <span className="text-lg font-semibold text-white">Оплата только в USDT</span>
+                              </div>
+                              <p className="text-center text-gray-300 text-sm">
+                                Все заказы оплачиваются по фиксированной сумме 7,15 USDT
+                              </p>
                             </div>
                             <div className="bg-slate-700 p-4 rounded-lg">
                               <div className="flex justify-between items-center mb-2">
                                 <span>Товары:</span>
                                 <span>{cartItems.length} шт.</span>
                               </div>
-                              <div className="flex justify-between items-center font-bold text-lg">
-                                <span>К оплате:</span>
-                                <span className="text-green-400">{getTotalPrice()}₽</span>
+                              <div className="flex justify-between items-center mb-2">
+                                <span>Цена в рублях:</span>
+                                <span className="text-gray-300">{getTotalPrice()}₽</span>
+                              </div>
+                              <div className="flex justify-between items-center font-bold text-xl border-t border-slate-600 pt-2">
+                                <span>К оплате в USDT:</span>
+                                <span className="text-green-400">7.15 USDT</span>
                               </div>
                             </div>
                           </div>
                           <DialogFooter>
                             <Button 
                               onClick={createHeleletPayment}
-                              disabled={!selectedCrypto || !customerEmail || isProcessing}
+                              disabled={!customerEmail || isProcessing}
                               className="w-full bg-green-600 hover:bg-green-700"
                             >
                               {isProcessing ? (
