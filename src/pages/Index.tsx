@@ -40,23 +40,23 @@ const Index = () => {
       id: 'gta5-premium',
       name: 'GTA 5 Premium Edition',
       price: 600,
-      originalPrice: 2000,
+      originalPrice: 600,
       image: '/img/e4ae1e34-f8b1-463e-b251-a08a0effaf36.jpg',
       description: 'Полное издание с Criminal Enterprise Starter Pack'
     },
     {
       id: 'steam-key',
       name: 'Steam Ключ GTA 5',
-      price: 450,
-      originalPrice: 1500,
+      price: 600,
+      originalPrice: 600,
       image: '',
       description: 'Стандартное издание для Steam'
     },
     {
       id: 'rockstar-key',
       name: 'Rockstar Games Key',
-      price: 550,
-      originalPrice: 1800,
+      price: 600,
+      originalPrice: 600,
       image: '',
       description: 'Прямая активация в Rockstar Launcher'
     }
@@ -78,93 +78,75 @@ const Index = () => {
   };
 
   const createHeleletPayment = async () => {
-    if (!customerEmail) return;
+    if (!customerEmail) {
+      alert('Пожалуйста, укажите email для оплаты');
+      return;
+    }
+    
+    if (cartItems.length === 0) {
+      alert('Корзина пуста');
+      return;
+    }
     
     setIsProcessing(true);
     
     try {
-      // Fixed amount 7.15 USDT for all orders
-      const fixedAmount = 7.15;
-      const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Try different possible endpoints
-      const endpoints = [
-        'https://api.heleket.com/v1/payment/create',
-        'https://api.heleket.com/v1/invoice/create',
-        'https://api.heleket.com/payment/create',
-        'https://heleket.com/api/v1/payment/create'
-      ];
-      
-      const paymentData = {
-        merchant_id: '6edaa85b-aed9-4d8f-ae74-f25291902678',
-        amount: fixedAmount,
-        currency: 'USDT',
-        order_id: orderId,
-        description: `Покупка игровых ключей: ${cartItems.map(item => item.name).join(', ')}`,
-        callback_url: window.location.origin + '/payment-callback',
-        success_url: window.location.origin + '/payment-success',
-        cancel_url: window.location.origin + '/payment-cancel'
+      // Отправляем данные корзины на Python сервер
+      const paymentRequest = {
+        cart_items: cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price
+        })),
+        customer_email: customerEmail
       };
       
-      let response;
-      let lastError = '';
+      console.log('Sending payment request:', paymentRequest);
       
-      // Try each endpoint until one works
-      for (const endpoint of endpoints) {
-        try {
-          console.log(`Trying endpoint: ${endpoint}`);
-          
-          response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer 3iXUYQL3dlfwncwjp4PyOo7FuuRlBuTnUec2btv7fkR2HA8Jg0V5LNHDh7K56DtryAd2FPyzWxXtasAc9fLH746Au0L9rFPGSodtTHtZnwumdZALZcVedPJASHznKePg',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify(paymentData)
-          });
-          
-          console.log(`Response status: ${response.status}`);
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Payment created successfully:', data);
-            
-            // Create mock payment URL for testing
-            const mockPaymentUrl = `https://pay.heleket.com/invoice/${orderId}?amount=${fixedAmount}&currency=USDT&email=${encodeURIComponent(customerEmail)}`;
-            
-            setPaymentData({
-              orderId: data.invoice_id || data.payment_id || data.id || orderId,
-              amount: fixedAmount,
-              currency: 'USDT',
-              paymentUrl: data.payment_url || data.invoice_url || data.url || mockPaymentUrl,
-              status: 'pending'
-            });
-            
-            // Open payment page
-            window.open(data.payment_url || data.invoice_url || data.url || mockPaymentUrl, '_blank');
-            alert('Платеж создан! Открылась страница оплаты.');
-            return;
-          }
-          
-          const errorText = await response.text();
-          lastError = `Endpoint ${endpoint}: ${response.status} - ${errorText}`;
-          console.log(lastError);
-          
-        } catch (err) {
-          lastError = `Endpoint ${endpoint}: Network error - ${err.message}`;
-          console.log(lastError);
-          continue;
-        }
+      const response = await fetch('http://localhost:8080/api/payment/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(paymentRequest)
+      });
+      
+      const result = await response.json();
+      console.log('Payment response:', result);
+      
+      if (result.success && result.payment_url) {
+        // Сохраняем данные платежа
+        setPaymentData({
+          orderId: result.order_id,
+          amount: result.amount_usdt,
+          currency: 'USDT',
+          paymentUrl: result.payment_url,
+          status: 'pending'
+        });
+        
+        // Открываем страницу оплаты
+        window.open(result.payment_url, '_blank');
+        
+        // Показываем информацию о платеже
+        alert(`✅ Платеж создан!\n\n💰 Сумма: ${result.amount_rub}₽ (${result.amount_usdt} USDT)\n🆔 ID заказа: ${result.order_id}\n📝 ${result.description}\n\nОткрылась страница оплаты Heleket.`);
+        
+        // Закрываем диалоги
+        setIsCheckoutOpen(false);
+        setIsCartOpen(false);
+        
+      } else {
+        console.error('Payment creation failed:', result);
+        alert(`❌ Ошибка создания платежа:\n${result.error || 'Unknown error'}\n\n🔧 Проверьте:\n- Работает ли Python сервер (python heleket_server.py)\n- Правильность API ключа Heleket\n- Подключение к интернету`);
       }
       
-      // If all endpoints failed, show detailed error
-      console.error('All endpoints failed:', lastError);
-      alert(`Не удалось создать платеж:\n${lastError}\n\nПроверьте API ключ и настройки мерчанта в Heleket.`);
-      
     } catch (error) {
-      console.error('Critical error:', error);
-      alert(`Критическая ошибка: ${error.message}`);
+      console.error('Payment request failed:', error);
+      
+      if (error.message.includes('fetch')) {
+        alert(`🔌 Ошибка подключения к серверу!\n\n📋 Убедитесь что:\n1. Запущен Python сервер: python heleket_server.py\n2. Сервер работает на http://localhost:8080\n3. Нет блокировки CORS\n\n❌ Ошибка: ${error.message}`);
+      } else {
+        alert(`💥 Критическая ошибка: ${error.message}`);
+      }
     } finally {
       setIsProcessing(false);
     }
