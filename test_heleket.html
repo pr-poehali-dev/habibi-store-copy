@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест Heleket API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #cce8ff;
+            border: 1px solid #66d9ff;
+            color: #004085;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Тест Heleket Payment API</h1>
+        
+        <p><strong>Merchant ID:</strong> 6edaa85b-aed9-4d8f-ae74-f25291902678</p>
+        
+        <button onclick="testHeleket()">🧪 Тестировать создание платежа</button>
+        <button onclick="checkMerchant()">👤 Проверить мерчанта</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const MERCHANT_ID = '6edaa85b-aed9-4d8f-ae74-f25291902678';
+        const API_KEY = '3iXUYQL3dlfwncwjp4PyOo7FuuRlBuTnUec2btv7fkR2HA8Jg0V5LNHDh7K56DtryAd2FPyzWxXtasAc9fLH746Au0L9rFPGSodtTHtZnwumdZALZcVedPJASHznKePg';
+        
+        function showResult(html, className = 'info') {
+            const result = document.getElementById('result');
+            result.innerHTML = `<div class="${className}">${html}</div>`;
+        }
+        
+        async function testHeleket() {
+            showResult('🔄 Создание тестового платежа...', 'info');
+            
+            const orderId = `test_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+            
+            const paymentData = {
+                merchant_id: MERCHANT_ID,
+                amount: 6.00, // 600₽ = 6 USDT
+                currency: 'USDT',
+                order_id: orderId,
+                description: 'Тестовый платеж GTA 5 Premium',
+                customer_email: 'test@example.com',
+                success_url: 'https://example.com/success',
+                cancel_url: 'https://example.com/cancel'
+            };
+            
+            console.log('📡 Отправка данных:', paymentData);
+            
+            const endpoints = [
+                'https://api.heleket.com/v1/invoices',
+                'https://api.heleket.com/v1/payments',
+                'https://api.heleket.com/invoices',
+                'https://heleket.com/api/v1/invoices'
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`🔗 Пробую: ${endpoint}`);
+                    
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${API_KEY}`,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(paymentData)
+                    });
+                    
+                    console.log(`📊 Статус ${endpoint}: ${response.status}`);
+                    
+                    const data = await response.text();
+                    console.log(`📋 Ответ ${endpoint}:`, data);
+                    
+                    if (response.ok) {
+                        let jsonData;
+                        try {
+                            jsonData = JSON.parse(data);
+                        } catch(e) {
+                            jsonData = { raw: data };
+                        }
+                        
+                        const paymentUrl = jsonData.url || jsonData.payment_url || jsonData.invoice_url;
+                        
+                        if (paymentUrl) {
+                            showResult(`
+                                <h3>✅ УСПЕХ! Платеж создан</h3>
+                                <p><strong>Endpoint:</strong> ${endpoint}</p>
+                                <p><strong>Order ID:</strong> ${orderId}</p>
+                                <p><strong>Amount:</strong> 6.00 USDT (600₽)</p>
+                                <p><strong>Payment URL:</strong> <a href="${paymentUrl}" target="_blank">${paymentUrl}</a></p>
+                                <button onclick="window.open('${paymentUrl}', '_blank')" style="background: #28a745; margin-top: 10px;">
+                                    🌍 ОТКРЫТЬ HELEKET
+                                </button>
+                                <details style="margin-top: 15px;">
+                                    <summary>📋 Полный ответ API</summary>
+                                    <pre style="margin-top: 10px; background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto;">${JSON.stringify(jsonData, null, 2)}</pre>
+                                </details>
+                            `, 'success');
+                            return;
+                        } else {
+                            showResult(`
+                                <h3>⚠️ Частичный успех</h3>
+                                <p><strong>Endpoint:</strong> ${endpoint}</p>
+                                <p><strong>Статус:</strong> ${response.status}</p>
+                                <p>❌ Нет payment_url в ответе</p>
+                                <details>
+                                    <summary>📋 Ответ</summary>
+                                    <pre style="margin-top: 10px; background: #f8f9fa; padding: 10px; border-radius: 5px;">${JSON.stringify(jsonData, null, 2)}</pre>
+                                </details>
+                            `, 'info');
+                        }
+                    } else {
+                        console.error(`❌ Ошибка ${endpoint}: ${response.status} - ${data}`);
+                    }
+                } catch (error) {
+                    console.error(`💥 Исключение ${endpoint}:`, error);
+                }
+            }
+            
+            showResult(`
+                <h3>❌ Все endpoints не работают</h3>
+                <p>Проверены endpoints:</p>
+                <ul>
+                    ${endpoints.map(ep => `<li>${ep}</li>`).join('')}
+                </ul>
+                <p><strong>Возможные причины:</strong></p>
+                <ul>
+                    <li>API ключ неактивен</li>
+                    <li>Мерчант не подтвержден</li>
+                    <li>Неправильный формат запроса</li>
+                    <li>CORS блокировка браузера</li>
+                </ul>
+            `, 'error');
+        }
+        
+        async function checkMerchant() {
+            showResult('🔄 Проверка мерчанта...', 'info');
+            
+            try {
+                const response = await fetch(`https://api.heleket.com/v1/merchants/${MERCHANT_ID}`, {
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.text();
+                
+                if (response.ok) {
+                    showResult(`
+                        <h3>✅ Мерчант найден</h3>
+                        <p><strong>ID:</strong> ${MERCHANT_ID}</p>
+                        <details>
+                            <summary>📋 Данные мерчанта</summary>
+                            <pre style="margin-top: 10px; background: #f8f9fa; padding: 10px; border-radius: 5px;">${data}</pre>
+                        </details>
+                    `, 'success');
+                } else {
+                    showResult(`
+                        <h3>❌ Мерчант не найден</h3>
+                        <p><strong>Статус:</strong> ${response.status}</p>
+                        <p><strong>Ответ:</strong> ${data}</p>
+                    `, 'error');
+                }
+            } catch (error) {
+                showResult(`
+                    <h3>💥 Ошибка проверки</h3>
+                    <p>${error.message}</p>
+                `, 'error');
+            }
+        }
+        
+        // Автозапуск теста при загрузке
+        window.onload = () => {
+            showResult('📋 Готов к тестированию Heleket API', 'info');
+        };
+    </script>
+</body>
+</html>

@@ -91,62 +91,138 @@ const Index = () => {
     setIsProcessing(true);
     
     try {
-      // Отправляем данные корзины на Python сервер
-      const paymentRequest = {
-        cart_items: cartItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price
-        })),
-        customer_email: customerEmail
-      };
+      // Рассчитываем общую стоимость
+      const totalRub = cartItems.reduce((sum, item) => sum + item.price, 0);
+      const totalUSDT = Math.round((totalRub / 100) * 100) / 100; // 1 USDT = 100₽
       
-      console.log('Sending payment request:', paymentRequest);
+      // Создаем уникальный ID заказа
+      const orderId = `habibi_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
       
-      const response = await fetch('http://localhost:8080/api/payment/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(paymentRequest)
+      // Описание заказа
+      const description = `Покупка игровых ключей: ${cartItems.map(item => item.name).join(', ')}`;
+      
+      console.log('🚀 Создание платежа Heleket:', {
+        merchant_id: '6edaa85b-aed9-4d8f-ae74-f25291902678',
+        amount: totalUSDT,
+        currency: 'USDT',
+        order_id: orderId,
+        description: description,
+        email: customerEmail
       });
       
-      const result = await response.json();
-      console.log('Payment response:', result);
+      // Прямой запрос к Heleket API
+      const heleletResponse = await fetch('https://api.heleket.com/v1/invoices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer 3iXUYQL3dlfwncwjp4PyOo7FuuRlBuTnUec2btv7fkR2HA8Jg0V5LNHDh7K56DtryAd2FPyzWxXtasAc9fLH746Au0L9rFPGSodtTHtZnwumdZALZcVedPJASHznKePg',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          merchant_id: '6edaa85b-aed9-4d8f-ae74-f25291902678',
+          amount: totalUSDT,
+          currency: 'USDT',
+          order_id: orderId,
+          description: description,
+          customer_email: customerEmail,
+          success_url: window.location.origin + '/success',
+          cancel_url: window.location.origin + '/cancel',
+          callback_url: window.location.origin + '/webhook'
+        })
+      });
       
-      if (result.success && result.payment_url) {
+      console.log('📡 Heleket response status:', heleletResponse.status);
+      
+      if (heleletResponse.ok) {
+        const heleletData = await heleletResponse.json();
+        console.log('✅ Heleket success:', heleletData);
+        
         // Сохраняем данные платежа
         setPaymentData({
-          orderId: result.order_id,
-          amount: result.amount_usdt,
+          orderId: orderId,
+          amount: totalUSDT,
           currency: 'USDT',
-          paymentUrl: result.payment_url,
+          paymentUrl: heleletData.url || heleletData.payment_url || heleletData.invoice_url,
           status: 'pending'
         });
         
-        // Открываем страницу оплаты
-        window.open(result.payment_url, '_blank');
+        // Проверяем что есть URL для оплаты
+        const paymentUrl = heleletData.url || heleletData.payment_url || heleletData.invoice_url;
         
-        // Показываем информацию о платеже
-        alert(`✅ Платеж создан!\n\n💰 Сумма: ${result.amount_rub}₽ (${result.amount_usdt} USDT)\n🆔 ID заказа: ${result.order_id}\n📝 ${result.description}\n\nОткрылась страница оплаты Heleket.`);
-        
-        // Закрываем диалоги
-        setIsCheckoutOpen(false);
-        setIsCartOpen(false);
+        if (paymentUrl) {
+          console.log('🌍 Переход на Heleket:', paymentUrl);
+          
+          // Перекидываем на Heleket
+          window.open(paymentUrl, '_blank');
+          
+          alert(`✅ Успешно! Переход на Heleket\n\n💰 Сумма: ${totalRub}₽ (${totalUSDT} USDT)\n🆔 Заказ: ${orderId}\n📝 ${description}`);
+          
+          // Закрываем диалоги
+          setIsCheckoutOpen(false);
+          setIsCartOpen(false);
+          
+        } else {
+          console.error('❌ Нет URL оплаты в ответе:', heleletData);
+          alert(`❌ Ошибка: Heleket не вернул ссылку на оплату\n\nОтвет: ${JSON.stringify(heleletData)}`);
+        }
         
       } else {
-        console.error('Payment creation failed:', result);
-        alert(`❌ Ошибка создания платежа:\n${result.error || 'Unknown error'}\n\n🔧 Проверьте:\n- Работает ли Python сервер (python heleket_server.py)\n- Правильность API ключа Heleket\n- Подключение к интернету`);
+        const errorText = await heleletResponse.text();
+        console.error('❌ Heleket error:', heleletResponse.status, errorText);
+        
+        // Попробуем альтернативные endpoints
+        const alternatives = [
+          'https://api.heleket.com/v1/payments',
+          'https://api.heleket.com/invoices',
+          'https://heleket.com/api/v1/invoices'
+        ];
+        
+        let success = false;
+        
+        for (const endpoint of alternatives) {
+          try {
+            console.log(`🔄 Пробую альтернативный endpoint: ${endpoint}`);
+            
+            const altResponse = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer 3iXUYQL3dlfwncwjp4PyOo7FuuRlBuTnUec2btv7fkR2HA8Jg0V5LNHDh7K56DtryAd2FPyzWxXtasAc9fLH746Au0L9rFPGSodtTHtZnwumdZALZcVedPJASHznKePg'
+              },
+              body: JSON.stringify({
+                merchant_id: '6edaa85b-aed9-4d8f-ae74-f25291902678',
+                amount: totalUSDT,
+                currency: 'USDT',
+                order_id: orderId,
+                description: description
+              })
+            });
+            
+            if (altResponse.ok) {
+              const altData = await altResponse.json();
+              console.log(`✅ Успех с ${endpoint}:`, altData);
+              
+              const paymentUrl = altData.url || altData.payment_url || altData.invoice_url;
+              if (paymentUrl) {
+                window.open(paymentUrl, '_blank');
+                alert(`✅ Платеж создан через ${endpoint}!\n\nПереход на Heleket...`);
+                success = true;
+                break;
+              }
+            }
+          } catch (err) {
+            console.log(`❌ Ошибка ${endpoint}:`, err.message);
+          }
+        }
+        
+        if (!success) {
+          alert(`❌ Все Heleket API не работают!\n\nОсновная ошибка: ${heleletResponse.status} - ${errorText}\n\n🔧 Проверьте:\n- Правильность API ключа\n- Статус мерчанта в Heleket\n- Доступность Heleket API`);
+        }
       }
       
     } catch (error) {
-      console.error('Payment request failed:', error);
-      
-      if (error.message.includes('fetch')) {
-        alert(`🔌 Ошибка подключения к серверу!\n\n📋 Убедитесь что:\n1. Запущен Python сервер: python heleket_server.py\n2. Сервер работает на http://localhost:8080\n3. Нет блокировки CORS\n\n❌ Ошибка: ${error.message}`);
-      } else {
-        alert(`💥 Критическая ошибка: ${error.message}`);
-      }
+      console.error('💥 Критическая ошибка:', error);
+      alert(`💥 Ошибка подключения к Heleket:\n${error.message}\n\n🌐 Проверьте интернет-соединение`);
     } finally {
       setIsProcessing(false);
     }
