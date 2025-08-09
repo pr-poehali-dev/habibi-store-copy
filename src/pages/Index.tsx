@@ -96,6 +96,7 @@ const Index = () => {
       ];
       
       const paymentData = {
+        merchant_id: '6edaa85b-aed9-4d8f-ae74-f25291902678',
         amount: fixedAmount,
         currency: 'USDT',
         order_id: orderId,
