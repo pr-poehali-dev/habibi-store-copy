@@ -610,22 +610,10 @@ const Index = () => {
             <div>
               <h4 className="text-lg font-semibold mb-4">Поддержка</h4>
               <ul className="space-y-2 text-gray-300">
-                <li className="hover:text-white cursor-pointer flex items-center">
-                  <Icon name="Shield" size={14} className="mr-2" />
-                  Гарантия активации
-                </li>
-                <li className="hover:text-white cursor-pointer flex items-center">
-                  <Icon name="Clock" size={14} className="mr-2" />
-                  Техподдержка 24/7
-                </li>
-                <li className="hover:text-white cursor-pointer flex items-center">
-                  <Icon name="BookOpen" size={14} className="mr-2" />
-                  Инструкции по активации
-                </li>
-                <li className="hover:text-white cursor-pointer flex items-center">
-                  <Icon name="RotateCcw" size={14} className="mr-2" />
-                  Возврат средств
-                </li>
+                <li className="hover:text-white cursor-pointer flex items-center"></li>
+                <li className="hover:text-white cursor-pointer flex items-center"></li>
+                <li className="hover:text-white cursor-pointer flex items-center"></li>
+                <li className="hover:text-white cursor-pointer flex items-center"></li>
               </ul>
             </div>
             
