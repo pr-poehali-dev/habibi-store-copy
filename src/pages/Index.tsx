@@ -601,9 +601,9 @@ const Index = () => {
               <h4 className="text-lg font-semibold mb-4"></h4>
               <ul className="space-y-2 text-gray-300">
                 <li className="hover:text-white cursor-pointer"></li>
-                <li className="hover:text-white cursor-pointer">Steam Ключи</li>
-                <li className="hover:text-white cursor-pointer">Rockstar Games</li>
-                <li className="hover:text-white cursor-pointer">Электронные ключи</li>
+                <li className="hover:text-white cursor-pointer"></li>
+                <li className="hover:text-white cursor-pointer"></li>
+                <li className="hover:text-white cursor-pointer"></li>
               </ul>
             </div>
             
