@@ -39,24 +39,24 @@ const Index = () => {
     {
       id: 'gta5-premium',
       name: 'GTA 5 Premium Edition',
-      price: 600,
-      originalPrice: 600,
+      price: 1800,
+      originalPrice: 1800,
       image: '/img/e4ae1e34-f8b1-463e-b251-a08a0effaf36.jpg',
       description: 'Полное издание с Criminal Enterprise Starter Pack'
     },
     {
       id: 'steam-key',
       name: 'Steam Ключ GTA 5',
-      price: 600,
-      originalPrice: 600,
+      price: 1800,
+      originalPrice: 1800,
       image: '',
       description: 'Стандартное издание для Steam'
     },
     {
       id: 'rockstar-key',
       name: 'Rockstar Games Key',
-      price: 600,
-      originalPrice: 600,
+      price: 1800,
+      originalPrice: 1800,
       image: '',
       description: 'Прямая активация в Rockstar Launcher'
     }
