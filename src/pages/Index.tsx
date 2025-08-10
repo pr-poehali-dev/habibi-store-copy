@@ -582,41 +582,119 @@ const Index = () => {
       {/* Footer */}
       <footer className="bg-slate-900 border-t border-slate-700 py-12">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8 text-white">
+          <div className="grid md:grid-cols-4 gap-8 text-white">
             <div>
               <h3 className="text-xl font-bold mb-4">
-                <span className="text-blue-400">Habibi</span>Store<span className="text-green-400">X</span>
+                <span className="text-blue-400">Habibi</span> <span className="text-green-400">Games</span>
               </h3>
               <p className="text-gray-300 mb-4">
                 Официальный магазин лицензионных цифровых ключей для игр
               </p>
               <div className="flex space-x-4">
-                <Icon name="Mail" size={20} className="text-gray-400" />
-                <Icon name="MessageCircle" size={20} className="text-gray-400" />
-                <Icon name="Phone" size={20} className="text-gray-400" />
+                <Icon name="Mail" size={20} className="text-gray-400 hover:text-blue-400 cursor-pointer" />
+                <Icon name="MessageCircle" size={20} className="text-gray-400 hover:text-green-400 cursor-pointer" />
+                <Icon name="Phone" size={20} className="text-gray-400 hover:text-purple-400 cursor-pointer" />
               </div>
             </div>
+            
             <div>
               <h4 className="text-lg font-semibold mb-4">Популярные игры</h4>
               <ul className="space-y-2 text-gray-300">
-                <li>GTA 5 Premium Edition</li>
-                <li>Steam Ключи</li>
-                <li>Rockstar Games</li>
-                <li>Электронные ключи</li>
+                <li className="hover:text-white cursor-pointer">GTA 5 Premium Edition</li>
+                <li className="hover:text-white cursor-pointer">Steam Ключи</li>
+                <li className="hover:text-white cursor-pointer">Rockstar Games</li>
+                <li className="hover:text-white cursor-pointer">Электронные ключи</li>
               </ul>
             </div>
+            
             <div>
               <h4 className="text-lg font-semibold mb-4">Поддержка</h4>
               <ul className="space-y-2 text-gray-300">
-                <li>Гарантия активации</li>
-                <li>Техподдержка 24/7</li>
-                <li>Инструкции по активации</li>
-                <li>Возврат средств</li>
+                <li className="hover:text-white cursor-pointer flex items-center">
+                  <Icon name="Shield" size={14} className="mr-2" />
+                  Гарантия активации
+                </li>
+                <li className="hover:text-white cursor-pointer flex items-center">
+                  <Icon name="Clock" size={14} className="mr-2" />
+                  Техподдержка 24/7
+                </li>
+                <li className="hover:text-white cursor-pointer flex items-center">
+                  <Icon name="BookOpen" size={14} className="mr-2" />
+                  Инструкции по активации
+                </li>
+                <li className="hover:text-white cursor-pointer flex items-center">
+                  <Icon name="RotateCcw" size={14} className="mr-2" />
+                  Возврат средств
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Юридическая информация</h4>
+              <ul className="space-y-2 text-gray-300">
+                <li>
+                  <button 
+                    onClick={() => window.open('/refund-policy', '_blank')}
+                    className="hover:text-blue-400 cursor-pointer text-left flex items-center"
+                  >
+                    <Icon name="FileText" size={14} className="mr-2" />
+                    Политика возврата
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => window.open('/privacy-policy', '_blank')}
+                    className="hover:text-green-400 cursor-pointer text-left flex items-center"
+                  >
+                    <Icon name="Shield" size={14} className="mr-2" />
+                    Политика конфиденциальности
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => window.open('/terms-of-service', '_blank')}
+                    className="hover:text-purple-400 cursor-pointer text-left flex items-center"
+                  >
+                    <Icon name="Scale" size={14} className="mr-2" />
+                    Пользовательское соглашение
+                  </button>
+                </li>
+                <li className="hover:text-yellow-400 cursor-pointer flex items-center">
+                  <Icon name="Phone" size={14} className="mr-2" />
+                  Контакты
+                </li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-slate-700 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 HabibistoreX. Все права защищены. Интеграция с Heleket Crypto Payments.</p>
+          
+          <div className="border-t border-slate-700 mt-8 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center text-gray-400">
+              <div className="mb-4 md:mb-0">
+                <p>&copy; 2025 Habibi Games. Все права защищены.</p>
+              </div>
+              
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center">
+                  <Icon name="Coins" size={16} className="mr-2 text-yellow-500" />
+                  <span>Криптоплатежи: Heleket</span>
+                </div>
+                <div className="flex items-center">
+                  <Icon name="MapPin" size={16} className="mr-2 text-blue-500" />
+                  <span>Россия, РФ</span>
+                </div>
+                <div className="flex items-center">
+                  <Icon name="Calendar" size={16} className="mr-2 text-green-500" />
+                  <span>Работаем с 2025</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-slate-800 text-center text-xs text-gray-500">
+              <p>
+                Все торговые марки являются собственностью соответствующих владельцев. 
+                Мы не являемся аффилированными лицами игровых компаний, а лишь авторизованными реселлерами цифровых ключей.
+              </p>
+            </div>
           </div>
         </div>
       </footer>
