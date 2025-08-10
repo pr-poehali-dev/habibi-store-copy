@@ -235,7 +235,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="text-2xl font-bold text-white">
-              <span className="text-blue-400">Habibi</span>Store<span className="text-green-400">X</span>
+              <span className="text-blue-400">Steam</span>Store<span className="text-green-400">X</span>
             </div>
             <nav className="hidden md:flex space-x-6">
               <a href="#" className="text-gray-300 hover:text-white transition-colors">Главная</a>
@@ -608,7 +608,7 @@ const Index = () => {
             </div>
             
             <div>
-              <h4 className="text-lg font-semibold mb-4">Поддержка</h4>
+              <h4 className="text-lg font-semibold mb-4"></h4>
               <ul className="space-y-2 text-gray-300">
                 <li className="hover:text-white cursor-pointer flex items-center"></li>
                 <li className="hover:text-white cursor-pointer flex items-center"></li>
