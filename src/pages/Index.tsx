@@ -420,7 +420,7 @@ const Index = () => {
               <CardContent>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <span className="text-2xl font-bold text-green-400">600₽</span>
+                    <span className="text-2xl font-bold text-green-400">1800₽</span>
                     <span className="text-gray-400 line-through ml-2">2000₽</span>
                   </div>
                   <Badge className="bg-green-500">В наличии</Badge>
@@ -459,7 +459,7 @@ const Index = () => {
               <CardContent>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <span className="text-2xl font-bold text-green-400">450₽</span>
+                    <span className="text-2xl font-bold text-green-400">1800₽</span>
                     <span className="text-gray-400 line-through ml-2">1500₽</span>
                   </div>
                   <Badge className="bg-green-500">В наличии</Badge>
@@ -498,7 +498,7 @@ const Index = () => {
               <CardContent>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <span className="text-2xl font-bold text-green-400">550₽</span>
+                    <span className="text-2xl font-bold text-green-400">1800₽</span>
                     <span className="text-gray-400 line-through ml-2">1800₽</span>
                   </div>
                   <Badge className="bg-green-500">В наличии</Badge>
@@ -598,7 +598,7 @@ const Index = () => {
             </div>
             
             <div>
-              <h4 className="text-lg font-semibold mb-4">Популярные игры</h4>
+              <h4 className="text-lg font-semibold mb-4"></h4>
               <ul className="space-y-2 text-gray-300">
                 <li className="hover:text-white cursor-pointer">GTA 5 Premium Edition</li>
                 <li className="hover:text-white cursor-pointer">Steam Ключи</li>
